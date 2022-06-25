@@ -1,76 +1,85 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow import layers
+import portfolio_allocator
 
-SIZE_OF_PORTFOLIO_ALLOCATOR_OUTPUT = 0  # given as a tuple
+SIZE_POWER_LAW_GENERATOR = (10)
 NUM_PL_HIDDEN_LAYERS = 5 # number of power law network hidden layers
-NUM_PA_HIDDEN_LAYERS = 7 # number of portfolio allocator hidden layers
 SIZE_OF_PL_OUTPUT_LAYER = 30  # However many numbers are required to describe ten different power laws
 
 
-def make_power_law():
-    """
-    creates a model which produces a variety of power law distributions which will try to minimize the
-    :return:
-    """
-    model = tf.keras.Sequential()
 
-    # input layer - Portfolio Allocation
-    model.add(layers.Dense(300, activation='relu', input_shape=SIZE_OF_PORTFOLIO_ALLOCATOR_OUTPUT))
-    model.add(layers.BatchNormalization(0.2))
+class DistributionGenerator:
+    def __init__(self, allocation=[]):
+        """
+        Creates a distribution generator model.
+        :param allocation: a numpy array describing the allocation of the portfolio.
+        """
+        self.portfolio_allocation = allocation
 
-    # Hidden Layers
-    # TODO try different architectures. This is very uniform and perhaps ill suited to the task.
-    for _ in range(NUM_PL_HIDDEN_LAYERS):
-        model.add(layers.Dense(500, activation='relu'))
-        model.add(layers.BatchNormalization())
-        # TODO may need to add dropout layers - see the kaggle tutorial
+    def make_power_law(self):
+        """
+        creates a model which produces a variety of power law distributions which will try to minimize the
+        :return:
+        """
+        model = tf.keras.Sequential()
 
-    # output layer
-    model.add(layers.Dense(SIZE_OF_PL_OUTPUT_LAYER, activation='relu'))
+        # input layer - Portfolio Allocation
+        model.add(layers.Dense(300, activation='relu',
+                               input_shape=portfolio_allocator.SIZE_OF_PORTFOLIO_ALLOCATOR_OUTPUT))
+        model.add(layers.BatchNormalization(0.2))
 
-    return model
+        # Hidden Layers
+        # TODO try different architectures. This is very uniform and perhaps ill suited to the task.
+        for _ in range(NUM_PL_HIDDEN_LAYERS):
+            model.add(layers.Dense(500, activation='relu'))
+            model.add(layers.BatchNormalization())
+            # TODO may need to add dropout layers - see the kaggle tutorial
 
-def make_portfolio_allocator():
-    """
-    Creates a portfolio allocator model model which chooses a portfolio given a collection of power_law distributions.
-    The chose portfolio tries to minimize losses and maximize gains.
-    :return: portfolio allocator model
-    """
-    model = tf.keras.Sequential()
+        # output layer
+        model.add(layers.Dense(SIZE_OF_PL_OUTPUT_LAYER, activation='relu'))
 
-    model.add(layers.Dense(500, activation='relu', input_shape=SIZE_OF_PL_OUTPUT_LAYER))
+        return model
 
-    # Hidden layers
-    for _ in range(NUM_PA_HIDDEN_LAYERS):
-        model.add(layers.Dense(500, activation='relu'))
-        model.add(layers.BatchNormalization())
 
-    # output layer
-    model.add(layers.Dense(SIZE_OF_PORTFOLIO_ALLOCATOR_OUTPUT, activation='relu'))
 
-    return model
+    def portfolio_allocator_loss(self, real_output, fake_output):
+        """
+        Takes in a vector with the real_output and the fake output and outputs the loss. For the portfolio allocator this
+        means calculating the amount of money lost from the portfolio given the distribution. Using the geometric
+        distribution will make this more realistic.
+        :param real_output:
+        :param fake_output:
+        :return: total portfolio loss
+        """
 
-def portfolio_allocator_loss(real_output, fake_output):
-    """
-    Takes in a vector with the real_output and the fake output and outputs the loss. For the portfolio allocator this
-    means calculating the amount of money lost from the portfolio given the distribution
-    :param real_output:
-    :param fake_output:
-    :return: total portfolio loss
-    """
+        # TODO how to do this? What is the real output and what is the fake output? How to define LOSS?
+        # The best way to structure this I suspect is to seperate the seperate modules into different classes. There
+        # needs to be a global variable, which can be changed. So when we are training the portfolio allocator,
+        # we have to keep the vector describing the output, this is what we need in order to calculate the loss.
 
-    # TODO how to do this? What is the real output and what is the fake output? How to define LOSS?
 
-def distribution_maker_loss(real_output, fake_output):
-    """
-    takes a portfolio allocation and calculates the loss. How much the portfolio gains and how much we want to it to
-    lose.
-    :param real_output:
-    :param fake_output:
-    :return:
-    """
 
-    # TODO how to do this? What is the real output and what is the fake output? How to define LOSS?
+        # we want to bring this value to zero, so any amount of success is anathema to the dist generator and we want
+        # to make it smaller
+        loss = fake_output*self.portfolio_allocation
+        geometric_average = np.exp(np.log(loss).mean())
+
+        return geometric_average
+
+    def calculate_losses(self, distribution, distribution_class="binom"):
+        """
+        calculates the probability of losses from the distribution. i.e. we are given ten distributions, what is the
+        probability of loss from each one based on the type of distribution
+        :param distribution: the vector describing the distribution
+        :param distribution_class: the type of distribution
+        :return: the vector describing the losses
+        """
+
+        #TODO python lacks a switch statement. Therefore, we have to create a dictionary. Each string value should
+        # match to its own function? But that will only be relevant later
+
+
+
 
 # Todo Train?
