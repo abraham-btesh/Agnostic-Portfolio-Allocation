@@ -3,7 +3,7 @@ import tensorflow as tf
 import power_law_generator
 from keras import layers
 
-SIZE_OF_PORTFOLIO_ALLOCATOR_OUTPUT = (10)  # given as a tuple
+SIZE_OF_PORTFOLIO_ALLOCATOR_OUTPUT = (10,)  # given as a tuple
 NUM_PA_HIDDEN_LAYERS = 7 # number of portfolio allocator hidden layers
 
 
